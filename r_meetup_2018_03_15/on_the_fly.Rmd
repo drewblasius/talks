@@ -13,6 +13,10 @@ head(boston)
 ```
 
 
+```{r}
+summary(boston$medv)
+```
+
 
 ```{r}
 library(GGally)
@@ -62,27 +66,59 @@ Now that we've seen a few interesting things with GGally, let's move on to try s
 - XGBoost + ICEbox + PDP
 ```{r}
 library(xgboost)
-xgb_mat <- data.matrix(boston[, -c('medv'), with=FALSE])
+X <- boston[, -c('medv', 'tax_factor'), with=FALSE]
+xgb_mat <- data.matrix(X)
 params <- list(
   objective='reg:linear',
   max_depth=9,
   gamma=.2, 
   eta=.005
 )
-xgb_cv <- xgb.cv(data=xgb_mat,
-                 label = boston$medv,
-                 nrounds=1000,
-                 nfold=5,
-                 early_stopping_rounds = 10)
-xgb_model <- xgb.train(params, data=xgb.DMatrix(data=xgb_mat, label=boston$medv), nround=100)
+
+xgb_model <- xgb.train(params, data=xgb.DMatrix(data=xgb_mat, label=boston$medv), nround=1000)
+```
+
+
+
+```{r}
+partial_df <- lapply(names(X), function(v){
+  print(v)
+  partial_grid <- partial(xgb_model, pred.var = v, train = xgb_mat)
+  names(partial_grid) <- c('x', 'yhat')
+  partial_grid[['var']] <- v
+  return(partial_grid)
+}) %>% rbindlist()
+
+```
+
+
+```{r}
+library(trelliscopejs)
+ggplot(partial_df, aes(x=x, y=yhat)) +
+  geom_line() +
+  facet_trelliscope(~var, scale='free_x')
+
+
 ```
 ```{r}
-xgb.ggplot.importance(xgb.importance(xgb_model, feature_names = names(xgb_mat)))
+ice_df <- lapply(names(X), function(v){
+  print(v)
+  partial_grid <- partial(xgb_model, pred.var = v, train = xgb_mat, ice=TRUE)
+  names(partial_grid) <- c('x', 'yhat', 'ice_idx')
+  partial_grid[['var']] <- v
+  return(partial_grid)
+}) %>% rbindlist()
 ```
 
 ```{r}
-library(pdp)
-partial = partial(xgb_model, pred.var = 'lstat', train=xgb_mat)
-plot(partial$lstat, partial$yhat)
-```
 
+
+
+
+
+
+
+
+
+
+```
