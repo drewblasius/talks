@@ -1,0 +1,88 @@
+
+We're going to begin by grabbing the Boston Housing Data.
+
+From 10,000 feet, this dataset involves the median value of occupied homes in Boston, as a function of 13 covariates.
+
+```{r}
+library(MASS)
+library(data.table)
+library(magrittr)
+data(Boston)
+boston <- data.table(Boston)
+head(boston)
+```
+
+
+
+```{r}
+library(GGally)
+ggpairs(
+  boston[, .(lstat, black, ptratio, tax, medv)]
+)
+
+ggpairs(
+  boston[, .(rad, dis, age, rm, crim)]
+)
+
+ggpairs(
+  boston[, .(nox, chas, indus, zn, crim)]
+)
+
+```
+
+
+Immediately from the kernel density estimators, some of our covariates are bimodal -- maybe some of these groups are better thought as factors?
+
+
+```{r}
+# Create a few new factors 
+# (Remember, data.table syntax dt[i, j, by])
+boston[, tax_factor := 'Low'][
+       tax > 550, tax_factor := 'High']
+# Now plot the new features to see if these affect any of our other covariates in interesting ways!
+
+ggpairs(
+  boston[, .(dis, age, lstat, black, ptratio, medv, tax_factor)],
+  columns = c('dis', 'age', 'lstat', 'black', 'ptratio', 'medv'),
+  aes(color=tax_factor)
+)
+
+# ggpairs(
+#   boston[, .(rad, dis, age, rm, crim)]
+# )
+# 
+# ggpairs(
+#   boston[, .(nox, chas, indus, zn, crim)]
+# )
+
+```
+
+Now that we've seen a few interesting things with GGally, let's move on to try some other tools:
+
+- XGBoost + ICEbox + PDP
+```{r}
+library(xgboost)
+xgb_mat <- data.matrix(boston[, -c('medv'), with=FALSE])
+params <- list(
+  objective='reg:linear',
+  max_depth=9,
+  gamma=.2, 
+  eta=.005
+)
+xgb_cv <- xgb.cv(data=xgb_mat,
+                 label = boston$medv,
+                 nrounds=1000,
+                 nfold=5,
+                 early_stopping_rounds = 10)
+xgb_model <- xgb.train(params, data=xgb.DMatrix(data=xgb_mat, label=boston$medv), nround=100)
+```
+```{r}
+xgb.ggplot.importance(xgb.importance(xgb_model, feature_names = names(xgb_mat)))
+```
+
+```{r}
+library(pdp)
+partial = partial(xgb_model, pred.var = 'lstat', train=xgb_mat)
+plot(partial$lstat, partial$yhat)
+```
+

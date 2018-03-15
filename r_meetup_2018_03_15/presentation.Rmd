@@ -1,0 +1,38 @@
+---
+title: "Tools for Rapid Prototyping in R"
+author: "Drew Blasius"
+date: "3/14/2018"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## CHRW Data Science
+
+- Small group, focused on rapid prototyping
+- Many ideas will "die on the vine"
+- Need to interface with domain layer often to gain insights
+- Need for code that can be quickly moved from notebook -> prototype -> production
+
+## Why R?
+
+- Most of us are Statisticians/Mathematicians by trade => package availability
+- Tools for Exploratory Data Analysis
+- Concise
+- Extremely good at handling tabular data (`data.table`!)
+- Connectors exist for commonly used databases in prototyping (Redis, Mongo, etc.)
+
+## Tools 
+
+### Understanding Data + Model Building
+- `GGally` 
+- `trelliscopejs`
+- `XGBoost` + `ICEBox` + `PDP`
+
+### Prototyping
+- docker 
+- docker-compose
+- `plumber`
+
