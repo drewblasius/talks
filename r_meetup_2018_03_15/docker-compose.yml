@@ -1,0 +1,21 @@
+version: '3'
+services:
+  # This is our docker container we built that makes a REST API out of our R Code!
+  plumber-server:
+    build: ./server
+    expose:
+      - 8000
+  # This is a load balancer which enables us to scale our application up!
+  lb:
+    image: 'dockercloud/haproxy:latest'
+    # We need to link our load balancer to our app
+    links:
+      - plumber-server 
+    # The load balancer also needs to be able to know when containers go up and down, 
+    # so it needs access to the docker socket, which is the device through which docker 
+    # containers communicate
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # We want our load balancer to listen on port 80 (the default port that you hit in your web browser)
+    ports:
+      - 8245:80
